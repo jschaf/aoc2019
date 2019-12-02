@@ -1,10 +1,9 @@
 package main
 
 import (
-	"bufio"
+	"aoc2019/files"
 	"fmt"
-	"os"
-	"strconv"
+	"log"
 )
 
 // Day 1: The Tyranny of the Rocket Equation
@@ -52,36 +51,24 @@ func main() {
 }
 
 func part1() {
-	f, err := os.Open("day01/input.txt")
+	ints, err := files.ReadAllLinesAsInts("day01/input.txt")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	defer f.Close()
-	s := bufio.NewScanner(f)
 	total := 0
-	for s.Scan() {
-		n, err := strconv.Atoi(s.Text())
-		if err != nil {
-			panic(err)
-		}
+	for _, n := range ints {
 		total += calcRequiredFuel(n)
 	}
 	fmt.Printf("Part 1: %d\n", total)
 }
 
 func part2() {
-	f, err := os.Open("day01/input.txt")
+	ints, err := files.ReadAllLinesAsInts("day01/input.txt")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	defer f.Close()
-	s2 := bufio.NewScanner(f)
 	total := 0
-	for s2.Scan() {
-		n, err := strconv.Atoi(s2.Text())
-		if err != nil {
-			panic(err)
-		}
+	for _, n := range ints {
 		total += calcRequiredFuelRecursive(n)
 	}
 	fmt.Printf("Part 2: %d\n", total)
