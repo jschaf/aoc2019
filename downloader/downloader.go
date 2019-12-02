@@ -27,10 +27,11 @@ func main() {
 
 	inputUrl := fmt.Sprintf("https://adventofcode.com/%d/day/%d/input", year, day)
 	input := getUrl(client, inputUrl)
+	defer input.Close()
 	inputBytes, err := ioutil.ReadAll(input)
 	checkError(err)
 	inputPath := fmt.Sprintf("day%s/input.txt", dayPrefix)
-	err = os.MkdirAll(filepath.Dir(inputPath), 0o666)
+	err = os.MkdirAll(filepath.Dir(inputPath), 0o755)
 	checkError(err)
 	inputFile, err := os.OpenFile(inputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
 	checkError(err)
@@ -44,7 +45,14 @@ func main() {
 		0o666)
 	checkError(err)
 	defer file.Close()
-	file.WriteString("package main\n\n")
+	file.WriteString("package main\n")
+	file.WriteString(`
+import (
+	"aoc2019/files"
+	"fmt"
+	"log"
+)
+`)
 
 	file.WriteString(`
 func main() {
@@ -99,7 +107,6 @@ func getUrl(client *http.Client, url string) io.ReadCloser {
 
 	resp, err := client.Do(req)
 	checkError(err)
-	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		log.Fatalf("Got non 200 status code: %d for url %s", resp.StatusCode, url)
