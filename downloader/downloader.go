@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 func main() {
@@ -118,7 +119,7 @@ func createCookie() *http.Cookie {
 	}
 	return &http.Cookie{
 		Name:  "session",
-		Value: string(bytes),
+		Value: strings.TrimSpace(string(bytes)),
 	}
 }
 
