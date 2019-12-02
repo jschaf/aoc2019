@@ -62,7 +62,7 @@ func main() {
 `)
 	fmt.Fprintf(file, `
 func part1() {
-	ints, err := files.ReadAllLinesAsInts("%s/input.txt")
+	ints, err := files.ReadAllLinesAsInts("day%s/input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func doPart1(n int) int {
 
 	fmt.Fprintf(file, `
 func part2() {
-	ints, err := files.ReadAllLinesAsInts("%s/input.txt")
+	ints, err := files.ReadAllLinesAsInts("day%s/input.txt")
 	if err != nil {
 		log.Fatal(err)
 	}

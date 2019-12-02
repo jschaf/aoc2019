@@ -3,7 +3,6 @@ package main
 import (
 	"aoc2019/files"
 	"fmt"
-	"log"
 )
 
 // Day 1: The Tyranny of the Rocket Equation
@@ -51,10 +50,7 @@ func main() {
 }
 
 func part1() {
-	ints, err := files.ReadAllLinesAsInts("day01/input.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ints := files.ReadAllLinesAsInts("day01/input.txt")
 	total := 0
 	for _, n := range ints {
 		total += calcRequiredFuel(n)
@@ -63,10 +59,7 @@ func part1() {
 }
 
 func part2() {
-	ints, err := files.ReadAllLinesAsInts("day01/input.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
+	ints := files.ReadAllLinesAsInts("day01/input.txt")
 	total := 0
 	for _, n := range ints {
 		total += calcRequiredFuelRecursive(n)
