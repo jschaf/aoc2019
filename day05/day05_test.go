@@ -81,8 +81,9 @@ func Test_eval_basicOps(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			eval(tt.mem, 0)
-			if !reflect.DeepEqual(tt.mem, tt.afterMem) {
+			code := NewIntCode(tt.mem)
+			code.RunWithInput(0)
+			if !reflect.DeepEqual(code.mem, tt.afterMem) {
 				t.Errorf("eval() = %v, want %v", tt.mem, tt.afterMem)
 			}
 		})
@@ -114,8 +115,9 @@ func Test_eval_inputOutput(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			eval(tt.mem, tt.input)
-			if !reflect.DeepEqual(tt.mem, tt.afterMem) {
+			code := NewIntCode(tt.mem)
+			code.RunWithInput(tt.input)
+			if !reflect.DeepEqual(code.mem, tt.afterMem) {
 				t.Errorf("eval() = %v, want %v", tt.mem, tt.afterMem)
 			}
 		})

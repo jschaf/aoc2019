@@ -12,12 +12,25 @@ func main() {
 	opsRaw := files.ReadFirstLine("day05/input.txt")
 
 	ops1 := lines.ParseCommaSeparatedInts(opsRaw)
-	out1 := eval(ops1, 1)
+	code1 := NewIntCode(ops1)
+	out1 := code1.RunWithInput(1)
 	fmt.Printf("part 1 output: %d\n", out1)
 
-	ops2 := lines.ParseCommaSeparatedInts(opsRaw)
-	out2 := eval(ops2, 5)
+	code2 := NewIntCode(ops1)
+	out2 := code2.RunWithInput(5)
 	fmt.Printf("part 2 output: %d\n", out2)
+}
+
+type intCode struct {
+	mem []int
+}
+
+func NewIntCode(mem []int) *intCode {
+	m := make([]int, len(mem))
+	copy(m, mem)
+	return &intCode{
+		mem: m,
+	}
 }
 
 const (
@@ -42,8 +55,9 @@ const (
 	immediateMode = 1
 )
 
-func eval(mem []int, input int) (output int) {
+func (ic *intCode) RunWithInput(input int) (output int) {
 	ip := 0
+	mem := ic.mem
 	output = math.MaxInt64
 	for mem[ip] != haltOp {
 		op := mem[ip]
@@ -52,32 +66,32 @@ func eval(mem []int, input int) (output int) {
 			return
 
 		case addOp:
-			p1 := load(mem, ip+1, mode(op, 0))
-			p2 := load(mem, ip+2, mode(op, 1))
-			out := load(mem, ip+3, immediateMode)
-			mem[out] = p1 + p2
+			p1 := ic.load(ip+1, mode(op, 0))
+			p2 := ic.load(ip+2, mode(op, 1))
+			out := ic.load(ip+3, immediateMode)
+			ic.store(out, p1+p2)
 			ip += 4
 
 		case multOp:
-			p1 := load(mem, ip+1, mode(op, 0))
-			p2 := load(mem, ip+2, mode(op, 1))
-			out := load(mem, ip+3, immediateMode)
-			mem[out] = p1 * p2
+			p1 := ic.load(ip+1, mode(op, 0))
+			p2 := ic.load(ip+2, mode(op, 1))
+			out := ic.load(ip+3, immediateMode)
+			ic.store(out, p1*p2)
 			ip += 4
 
 		case inputOp:
-			out := load(mem, ip+1, immediateMode)
-			mem[out] = input
+			out := ic.load(ip+1, immediateMode)
+			ic.store(out, input)
 			ip += 2
 
 		case outputOp:
-			out := load(mem, ip+1, immediateMode)
+			out := ic.load(ip+1, immediateMode)
 			output = mem[out]
 			ip += 2
 
 		case jmpTrueOp:
-			p1 := load(mem, ip+1, mode(op, 0))
-			p2 := load(mem, ip+2, mode(op, 1))
+			p1 := ic.load(ip+1, mode(op, 0))
+			p2 := ic.load(ip+2, mode(op, 1))
 			if p1 > 0 {
 				ip = p2
 			} else {
@@ -85,8 +99,8 @@ func eval(mem []int, input int) (output int) {
 			}
 
 		case jmpFalseOp:
-			p1 := load(mem, ip+1, mode(op, 0))
-			p2 := load(mem, ip+2, mode(op, 1))
+			p1 := ic.load(ip+1, mode(op, 0))
+			p2 := ic.load(ip+2, mode(op, 1))
 			if p1 == 0 {
 				ip = p2
 			} else {
@@ -94,24 +108,24 @@ func eval(mem []int, input int) (output int) {
 			}
 
 		case ltOp:
-			p1 := load(mem, ip+1, mode(op, 0))
-			p2 := load(mem, ip+2, mode(op, 1))
-			store := mem[ip+3]
+			p1 := ic.load(ip+1, mode(op, 0))
+			p2 := ic.load(ip+2, mode(op, 1))
+			out := ic.load(ip+3, immediateMode)
 			if p1 < p2 {
-				mem[store] = trueV
+				ic.store(out, trueV)
 			} else {
-				mem[store] = falseV
+				ic.store(out, falseV)
 			}
 			ip += 4
 
 		case eqOp:
-			p1 := load(mem, ip+1, mode(op, 0))
-			p2 := load(mem, ip+2, mode(op, 1))
-			store := mem[ip+3]
+			p1 := ic.load(ip+1, mode(op, 0))
+			p2 := ic.load(ip+2, mode(op, 1))
+			out := ic.load(ip+3, immediateMode)
 			if p1 == p2 {
-				mem[store] = trueV
+				ic.store(out, trueV)
 			} else {
-				mem[store] = falseV
+				ic.store(out, falseV)
 			}
 			ip += 4
 
@@ -130,13 +144,17 @@ func mode(op, pos int) int {
 	return mask % 10
 }
 
-func load(mem []int, ip int, mode int) int {
+func (ic *intCode) load(pos int, mode int) int {
 	switch mode {
 	case positionMode:
-		return mem[mem[ip]]
+		return ic.mem[ic.mem[pos]]
 	case immediateMode:
-		return mem[ip]
+		return ic.mem[pos]
 	default:
 		panic(fmt.Sprintf("unknown mode %d", mode))
 	}
+}
+
+func (ic *intCode) store(pos int, val int) {
+	ic.mem[pos] = val
 }
