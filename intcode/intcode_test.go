@@ -1,4 +1,4 @@
-package main
+package intcode
 
 import (
 	"reflect"
@@ -81,8 +81,8 @@ func Test_eval_basicOps(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			code := NewIntCode(tt.mem)
-			code.RunWithInput(0)
+			code := NewFromOps(tt.mem)
+			code.RunWithFixedInput([]int{0})
 			if !reflect.DeepEqual(code.mem, tt.afterMem) {
 				t.Errorf("eval() = %v, want %v", tt.mem, tt.afterMem)
 			}
@@ -95,28 +95,35 @@ func Test_eval_inputOutput(t *testing.T) {
 		name       string
 		mem        []int
 		afterMem   []int
-		input      int
+		inputs     []int
 		wantOutput int
 	}{
 		{
 			"input",
-			[]int{3, 1, 99},
-			[]int{3, 88, 99},
-			88,
+			[]int{inputOp, 1, haltOp},
+			[]int{inputOp, 88, haltOp},
+			[]int{88},
+			0,
+		},
+		{
+			"multiple inputs",
+			[]int{inputOp, 1, inputOp, 3, haltOp},
+			[]int{inputOp, 88, inputOp, 99, haltOp},
+			[]int{88, 99},
 			0,
 		},
 		{
 			"output",
-			[]int{4, 0, 99},
-			[]int{4, 0, 99},
-			0,
+			[]int{outputOp, 0, haltOp},
+			[]int{outputOp, 0, haltOp},
+			[]int{0},
 			4,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			code := NewIntCode(tt.mem)
-			code.RunWithInput(tt.input)
+			code := NewFromOps(tt.mem)
+			code.RunWithFixedInput(tt.inputs)
 			if !reflect.DeepEqual(code.mem, tt.afterMem) {
 				t.Errorf("eval() = %v, want %v", tt.mem, tt.afterMem)
 			}
