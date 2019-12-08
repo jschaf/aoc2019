@@ -13,9 +13,9 @@ func main() {
 	ops1 := lines.ParseCommaSeparatedInts(opsRaw)
 	code1 := intcode.NewFromOps(ops1)
 	out1 := code1.RunWithFixedInput([]int{1})
-	fmt.Printf("part 1 output: %d\n", out1)
+	fmt.Printf("part 1 output: %v\n", out1)
 
 	code2 := intcode.NewFromOps(ops1)
 	out2 := code2.RunWithFixedInput([]int{5})
-	fmt.Printf("part 2 output: %d\n", out2)
+	fmt.Printf("part 2 output: %v\n", out2)
 }

@@ -7,7 +7,7 @@ import (
 
 const badOp = 77777
 
-func Test_eval_basicOps(t *testing.T) {
+func TestMem_RunWithFixedInputs_basicOps(t *testing.T) {
 	tests := []struct {
 		name     string
 		mem      []int
@@ -82,50 +82,60 @@ func Test_eval_basicOps(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			code := NewFromOps(tt.mem)
-			code.RunWithFixedInput([]int{0})
+			code.RunWithFixedInput([]int{})
 			if !reflect.DeepEqual(code.mem, tt.afterMem) {
-				t.Errorf("eval() = %v, want %v", tt.mem, tt.afterMem)
+				t.Errorf("RunWithFixedInput() = %v, want %v", tt.mem, tt.afterMem)
 			}
 		})
 	}
 }
 
-func Test_eval_inputOutput(t *testing.T) {
+func TestMem_RunWithFixedInput_inputOutput(t *testing.T) {
 	tests := []struct {
 		name       string
 		mem        []int
 		afterMem   []int
 		inputs     []int
-		wantOutput int
+		wantOutput []int
 	}{
 		{
 			"input",
 			[]int{inputOp, 1, haltOp},
 			[]int{inputOp, 88, haltOp},
 			[]int{88},
-			0,
+			[]int{},
 		},
 		{
 			"multiple inputs",
 			[]int{inputOp, 1, inputOp, 3, haltOp},
 			[]int{inputOp, 88, inputOp, 99, haltOp},
 			[]int{88, 99},
-			0,
+			[]int{},
 		},
 		{
 			"output",
-			[]int{outputOp, 0, haltOp},
-			[]int{outputOp, 0, haltOp},
+			[]int{outputOp, 667, haltOp},
+			[]int{outputOp, 667, haltOp},
 			[]int{0},
-			4,
+			[]int{667},
+		},
+		{
+			"multiple outputs",
+			[]int{outputOp, 667, outputOp, 668, haltOp},
+			[]int{outputOp, 667, outputOp, 668, haltOp},
+			[]int{0},
+			[]int{667, 668},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			code := NewFromOps(tt.mem)
-			code.RunWithFixedInput(tt.inputs)
+			outputs := code.RunWithFixedInput(tt.inputs)
 			if !reflect.DeepEqual(code.mem, tt.afterMem) {
-				t.Errorf("eval() = %v, want %v", tt.mem, tt.afterMem)
+				t.Errorf("RunWithFixedInput() = %v, want %v", tt.mem, tt.afterMem)
+			}
+			if !reflect.DeepEqual(outputs, tt.wantOutput) {
+				t.Errorf("outputs = %v, want %v", outputs, tt.wantOutput)
 			}
 		})
 	}

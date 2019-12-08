@@ -3,22 +3,23 @@ package intcode
 import (
 	"fmt"
 	"log"
-	"math"
+	"time"
 )
 
 type Mem struct {
-	mem []int
-	in  chan int
-	out chan int
+	mem     []int
+	in, out chan int
+	halt    chan bool
 }
 
 func NewFromOps(mem []int) *Mem {
 	m := make([]int, len(mem))
 	copy(m, mem)
 	return &Mem{
-		mem: m,
-		in:  make(chan int),
-		out: make(chan int),
+		mem:  m,
+		in:   make(chan int),
+		out:  make(chan int),
+		halt: make(chan bool),
 	}
 }
 
@@ -44,15 +45,49 @@ const (
 	immediateMode = 1
 )
 
-func (ic *Mem) RunWithFixedInput(inputs []int) (output int) {
+func (ic *Mem) RunWithFixedInput(inputs []int) []int {
+	go func() {
+		for _, x := range inputs {
+			log.Printf("COORD: writing input %d", x)
+			ic.in <- x
+			log.Printf("COORD: continuing after writing input %d", x)
+		}
+	}()
+
+	go ic.Run()
+
+	outputs := make([]int, 0)
+	i := 0
+	for {
+		log.Printf("COORD: looping over select i=%d", i)
+		i++
+		select {
+
+		case v := <-ic.out:
+			log.Printf("COORD: got output %d", v)
+			outputs = append(outputs, v)
+
+		case <-ic.halt:
+			log.Printf("COORD: got halt")
+			return outputs
+
+		case <-time.After(1000000 * time.Second):
+			log.Fatalf("Timed out running with fixed input")
+		}
+	}
+}
+
+func (ic *Mem) Run() {
+	defer close(ic.out)
 	ip := 0
 	curInputIdx := 0
 	mem := ic.mem
-	output = math.MaxInt64
-	for mem[ip] != haltOp {
+	for {
 		op := mem[ip]
 		switch op % 100 {
 		case haltOp:
+			log.Printf("RUN: Sent halt true")
+			ic.halt <- true
 			return
 
 		case addOp:
@@ -71,16 +106,22 @@ func (ic *Mem) RunWithFixedInput(inputs []int) (output int) {
 
 		case inputOp:
 			out := ic.load(ip+1, immediateMode)
-			if curInputIdx >= len(inputs) {
-				log.Fatalf("not enough inputs, had %d inputs but trying to use %d", len(inputs), curInputIdx)
+			log.Printf("RUN: Reading from input")
+			select {
+			case input := <-ic.in:
+				log.Printf("RUN: Continuing after reading %d from input", input)
+				ic.store(out, input)
+				curInputIdx += 1
+				ip += 2
+			case <-time.After(1 * time.Second):
+				log.Fatalf("failed to get input in 1 second")
 			}
-			ic.store(out, inputs[curInputIdx])
-			curInputIdx += 1
-			ip += 2
 
 		case outputOp:
 			out := ic.load(ip+1, immediateMode)
-			output = mem[out]
+			log.Printf("RUN: Writing %d to output", out)
+			ic.out <- out
+			log.Printf("RUN: Continuing after writing %d to output", out)
 			ip += 2
 
 		case jmpTrueOp:
@@ -127,7 +168,6 @@ func (ic *Mem) RunWithFixedInput(inputs []int) (output int) {
 			log.Fatalf("unknown op code %d", op)
 		}
 	}
-	return output
 }
 
 func mode(op, pos int) int {
