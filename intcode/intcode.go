@@ -7,19 +7,21 @@ import (
 )
 
 type Mem struct {
-	mem     []int
-	in, out chan int
-	halt    chan bool
+	mem           []int
+	ID            string
+	Input, Output chan int
+	Quit          chan bool
 }
 
 func NewFromOps(mem []int) *Mem {
 	m := make([]int, len(mem))
 	copy(m, mem)
 	return &Mem{
-		mem:  m,
-		in:   make(chan int),
-		out:  make(chan int),
-		halt: make(chan bool),
+		mem:    m,
+		ID:     "Mem",
+		Input:  make(chan int),
+		Output: make(chan int),
+		Quit:   make(chan bool),
 	}
 }
 
@@ -48,9 +50,7 @@ const (
 func (ic *Mem) RunWithFixedInput(inputs []int) []int {
 	go func() {
 		for _, x := range inputs {
-			log.Printf("COORD: writing input %d", x)
-			ic.in <- x
-			log.Printf("COORD: continuing after writing input %d", x)
+			ic.Input <- x
 		}
 	}()
 
@@ -59,26 +59,24 @@ func (ic *Mem) RunWithFixedInput(inputs []int) []int {
 	outputs := make([]int, 0)
 	i := 0
 	for {
-		log.Printf("COORD: looping over select i=%d", i)
 		i++
 		select {
 
-		case v := <-ic.out:
-			log.Printf("COORD: got output %d", v)
+		case v := <-ic.Output:
 			outputs = append(outputs, v)
 
-		case <-ic.halt:
-			log.Printf("COORD: got halt")
+		case <-ic.Quit:
 			return outputs
 
 		case <-time.After(1000000 * time.Second):
-			log.Fatalf("Timed out running with fixed input")
+			log.Fatalf("%s Timed out running with fixed input", ic.ID)
 		}
 	}
 }
 
 func (ic *Mem) Run() {
-	defer close(ic.out)
+	defer close(ic.Output)
+	defer close(ic.Quit)
 	ip := 0
 	curInputIdx := 0
 	mem := ic.mem
@@ -86,8 +84,7 @@ func (ic *Mem) Run() {
 		op := mem[ip]
 		switch op % 100 {
 		case haltOp:
-			log.Printf("RUN: Sent halt true")
-			ic.halt <- true
+			ic.Quit <- true
 			return
 
 		case addOp:
@@ -106,22 +103,18 @@ func (ic *Mem) Run() {
 
 		case inputOp:
 			out := ic.load(ip+1, immediateMode)
-			log.Printf("RUN: Reading from input")
 			select {
-			case input := <-ic.in:
-				log.Printf("RUN: Continuing after reading %d from input", input)
+			case input := <-ic.Input:
 				ic.store(out, input)
 				curInputIdx += 1
 				ip += 2
 			case <-time.After(1 * time.Second):
-				log.Fatalf("failed to get input in 1 second")
+				log.Fatalf("%s failed to get input in 1 second", ic.ID)
 			}
 
 		case outputOp:
 			out := ic.load(ip+1, immediateMode)
-			log.Printf("RUN: Writing %d to output", out)
-			ic.out <- out
-			log.Printf("RUN: Continuing after writing %d to output", out)
+			ic.Output <- mem[out]
 			ip += 2
 
 		case jmpTrueOp:
