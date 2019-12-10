@@ -24,3 +24,15 @@ func ParseCommaSeparatedInts(line string) []int {
 	}
 	return ns
 }
+
+func ParseAdjacentSingleDigitInts(line string) []int {
+	var ns []int
+	for _, s := range strings.Split(line, "") {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ns = append(ns, n)
+	}
+	return ns
+}
