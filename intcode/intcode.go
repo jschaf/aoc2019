@@ -1,6 +1,7 @@
 package intcode
 
 import (
+	"aoc2019/lines"
 	"fmt"
 	"log"
 	"time"
@@ -33,6 +34,10 @@ func NewFromOps(mem []int) *Mem {
 		Output:  make(chan int),
 		State:   make(chan State),
 	}
+}
+
+func ParseLine(line string) *Mem {
+	return NewFromOps(lines.ParseCommaSeparatedInts(line))
 }
 
 const (

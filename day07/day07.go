@@ -4,7 +4,6 @@ import (
 	"aoc2019/combinations"
 	"aoc2019/files"
 	"aoc2019/intcode"
-	"aoc2019/lines"
 	"aoc2019/maths"
 	"fmt"
 	"log"
@@ -17,16 +16,13 @@ func main() {
 	p1 := part1(origCode)
 	fmt.Printf("Part 1 best signal: %d\n", p1)
 
-	p2 := part2a(origCode)
+	p2 := part2(origCode)
 	fmt.Printf("Part 2 best signal: %d\n", p2)
-
 }
 
 func parseInputToIntCode(file string) *intcode.Mem {
-	opsRaw := files.ReadFirstLine(file)
-	ops1 := lines.ParseCommaSeparatedInts(opsRaw)
-	return intcode.NewFromOps(ops1)
-
+	line := files.ReadFirstLine(file)
+	return intcode.ParseLine(line)
 }
 
 func part1(origCode *intcode.Mem) int {
@@ -47,7 +43,7 @@ func part1(origCode *intcode.Mem) int {
 	return bestSignal
 }
 
-func part2a(origCode *intcode.Mem) int {
+func part2(origCode *intcode.Mem) int {
 	possiblePhases := []int{5, 6, 7, 8, 9}
 	bestSignal := math.MinInt64
 	for p := combinations.NewPermuter(possiblePhases); p.HasNext(); p.Next() {
