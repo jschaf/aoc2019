@@ -101,19 +101,19 @@ func (ic *Mem) Run() {
 		case addOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
-			out := ic.load(ip+3, immediateMode)
+			out := ic.loadWriteAddr(ip+3, mode(op, 2))
 			ic.store(out, p1+p2)
 			ip += 4
 
 		case multOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
-			out := ic.load(ip+3, immediateMode)
+			out := ic.loadWriteAddr(ip+3, mode(op, 2))
 			ic.store(out, p1*p2)
 			ip += 4
 
 		case inputOp:
-			out := ic.load(ip+1, immediateMode)
+			out := ic.loadWriteAddr(ip+1, mode(op, 0))
 			ic.State <- NeedInput
 			select {
 			case input := <-ic.Input:
@@ -125,7 +125,7 @@ func (ic *Mem) Run() {
 			}
 
 		case outputOp:
-			out := ic.load(ip+1, immediateMode)
+			out := ic.loadWriteAddr(ip+1, mode(op, 0))
 			ic.State <- HaveOutput
 			get := ic.get(out)
 			ic.Output <- get
@@ -152,7 +152,7 @@ func (ic *Mem) Run() {
 		case ltOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
-			out := ic.load(ip+3, immediateMode)
+			out := ic.loadWriteAddr(ip+3, mode(op, 2))
 			if p1 < p2 {
 				ic.store(out, trueV)
 			} else {
@@ -163,7 +163,7 @@ func (ic *Mem) Run() {
 		case eqOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
-			out := ic.load(ip+3, immediateMode)
+			out := ic.loadWriteAddr(ip+3, mode(op, 2))
 			if p1 == p2 {
 				ic.store(out, trueV)
 			} else {
@@ -198,6 +198,18 @@ func (ic *Mem) load(pos int, mode int) int {
 		return ic.get(pos)
 	case relativeMode:
 		return ic.get(ic.relBase + ic.get(pos))
+	default:
+		panic(fmt.Sprintf("unknown mode %d", mode))
+	}
+}
+func (ic *Mem) loadWriteAddr(pos int, mode int) int {
+	switch mode {
+	case positionMode:
+		return ic.get(pos)
+	case immediateMode:
+		panic("write addr should not be immediate")
+	case relativeMode:
+		return ic.relBase + ic.get(pos)
 	default:
 		panic(fmt.Sprintf("unknown mode %d", mode))
 	}

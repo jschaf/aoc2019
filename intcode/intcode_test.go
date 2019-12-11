@@ -21,9 +21,10 @@ func m(op int, modes ...int) int {
 	}
 	return (v * 100) + op
 }
-func imm2(op int) int {
-	return m(op, imm, imm)
-}
+func imm1(op int) int { return m(op, immediateMode) }
+func imm2(op int) int { return m(op, immediateMode, immediateMode) }
+func rel1(op int) int { return m(op, relativeMode) }
+func rel2(op int) int { return m(op, relativeMode, relativeMode) }
 
 func Test_mode(t *testing.T) {
 	tests := []struct {
@@ -55,6 +56,11 @@ func TestMem_RunWithFixedInputs_relBase(t *testing.T) {
 			"uses relative base",
 			[]int{m(adjRelBaseOp, imm), 2, m(multOp, rel, rel), 5, 6, 9, haltOp, 11, 13, -1},
 			[]int{m(adjRelBaseOp, imm), 2, m(multOp, rel, rel), 5, 6, 9, haltOp, 11, 13, 143},
+		},
+		{
+			"with relative base and many outputs",
+			[]int{109, 1, 204, -1, haltOp},
+			[]int{109, 1, 204, -1, haltOp},
 		},
 	}
 	for _, tt := range tests {
@@ -214,22 +220,29 @@ func TestMem_RunWithFixedInput_inputOutput(t *testing.T) {
 			"output",
 			[]int{outputOp, 3, haltOp, 667},
 			[]int{outputOp, 3, haltOp, 667},
-			[]int{0},
+			[]int{},
 			[]int{667},
 		},
 		{
 			"multiple outputs",
 			[]int{outputOp, 5, outputOp, 6, haltOp, 667, 668},
 			[]int{outputOp, 5, outputOp, 6, haltOp, 667, 668},
-			[]int{0},
+			[]int{},
 			[]int{667, 668},
 		},
+		{
+			"output from negative relative base",
+			[]int{109, 1, 204, -1, haltOp},
+			[]int{109, 1, 204, -1, haltOp},
+			[]int{},
+			[]int{109},
+		},
 		// {
-		// 	"with relative base and many outputs",
+		// 	"output from negative relative base",
 		// 	[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
 		// 	[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
-		// 	[]int{109},
-		// 	[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
+		// 	[]int{},
+		// 	[]int{0},
 		// },
 	}
 	for _, tt := range tests {
