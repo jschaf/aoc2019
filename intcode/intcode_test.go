@@ -21,10 +21,7 @@ func m(op int, modes ...int) int {
 	}
 	return (v * 100) + op
 }
-func imm1(op int) int { return m(op, immediateMode) }
 func imm2(op int) int { return m(op, immediateMode, immediateMode) }
-func rel1(op int) int { return m(op, relativeMode) }
-func rel2(op int) int { return m(op, relativeMode, relativeMode) }
 
 func Test_mode(t *testing.T) {
 	tests := []struct {
@@ -166,14 +163,14 @@ func TestMem_RunWithFixedInput_resize(t *testing.T) {
 		wantOutput []int
 	}{
 		{
-			"doesnt resize for reads",
+			"no resize for reads",
 			[]int{outputOp, 6, haltOp},
 			[]int{outputOp, 6, haltOp},
 			[]int{},
 			[]int{0},
 		},
 		{
-			"resizes for writes",
+			"resize for writes",
 			[]int{imm2(addOp), 3, 5, 6, haltOp},
 			[]int{imm2(addOp), 3, 5, 6, haltOp, 0, 8},
 			[]int{},
