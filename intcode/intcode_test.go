@@ -7,6 +7,67 @@ import (
 
 const badOp = 77777
 
+const (
+	pos = positionMode
+	imm = immediateMode
+	rel = relativeMode
+)
+
+func m(op int, modes ...int) int {
+	v := 0
+	for _, m := range modes {
+		v *= 10
+		v += m
+	}
+	return (v * 100) + op
+}
+func imm2(op int) int {
+	return m(op, imm, imm)
+}
+
+func Test_mode(t *testing.T) {
+	tests := []struct {
+		name      string
+		val, want int
+	}{
+		{"rel-imm-add", m(addOp, rel, imm), 2100 + addOp},
+		{"rel-imm-jmp", m(jmpTrueOp, rel, imm), 2100 + jmpTrueOp},
+		{"pos-imm-add", m(addOp, pos, imm), 100 + addOp},
+		{"imm-pos-add", m(addOp, imm, pos), 1000 + addOp},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.val != tt.want {
+				t.Errorf("mode() = %v, want %v", tt.val, tt.want)
+			}
+		})
+	}
+}
+
+func TestMem_RunWithFixedInputs_relBase(t *testing.T) {
+	tests := []struct {
+		name     string
+		mem      []int
+		afterMem []int
+	}{
+		{
+			"uses relative base",
+			[]int{m(adjRelBaseOp, imm), 2, m(multOp, rel, rel), 5, 6, 9, haltOp, 11, 13, -1},
+			[]int{m(adjRelBaseOp, imm), 2, m(multOp, rel, rel), 5, 6, 9, haltOp, 11, 13, 143},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code := NewFromOps(tt.mem)
+			code.RunWithFixedInput([]int{})
+			if !reflect.DeepEqual(code.mem, tt.afterMem) {
+				t.Errorf("RunWithFixedInput() = %v, want %v", code.mem, tt.afterMem)
+			}
+		})
+	}
+}
+
 func TestMem_RunWithFixedInputs_basicOps(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -20,8 +81,8 @@ func TestMem_RunWithFixedInputs_basicOps(t *testing.T) {
 		},
 		{
 			"add immediate mode",
-			[]int{1100 + addOp, 3, 5, 1, haltOp},
-			[]int{1100 + addOp, 8, 5, 1, haltOp},
+			[]int{imm2(addOp), 3, 5, 1, haltOp},
+			[]int{imm2(addOp), 8, 5, 1, haltOp},
 		},
 		{
 			"multiply position mode",
@@ -30,13 +91,13 @@ func TestMem_RunWithFixedInputs_basicOps(t *testing.T) {
 		},
 		{
 			"multiply immediate mode",
-			[]int{1100 + multOp, 3, 5, 1, haltOp},
-			[]int{1100 + multOp, 15, 5, 1, haltOp},
+			[]int{imm2(multOp), 3, 5, 1, haltOp},
+			[]int{imm2(multOp), 15, 5, 1, haltOp},
 		},
 		{
 			"jump true when true immediate mode",
-			[]int{1100 + jmpTrueOp, trueV, 4, badOp, haltOp},
-			[]int{1100 + jmpTrueOp, trueV, 4, badOp, haltOp},
+			[]int{imm2(jmpTrueOp), trueV, 4, badOp, haltOp},
+			[]int{imm2(jmpTrueOp), trueV, 4, badOp, haltOp},
 		},
 		{
 			"jump true when true position mode",
@@ -45,38 +106,38 @@ func TestMem_RunWithFixedInputs_basicOps(t *testing.T) {
 		},
 		{
 			"jump true when false immediate mode",
-			[]int{1100 + jmpTrueOp, falseV, 4, haltOp, badOp},
-			[]int{1100 + jmpTrueOp, falseV, 4, haltOp, badOp},
+			[]int{imm2(jmpTrueOp), falseV, 4, haltOp, badOp},
+			[]int{imm2(jmpTrueOp), falseV, 4, haltOp, badOp},
 		},
 		{
 			"jump false when true immediate mode",
-			[]int{1100 + jmpFalseOp, trueV, 4, haltOp, badOp},
-			[]int{1100 + jmpFalseOp, trueV, 4, haltOp, badOp},
+			[]int{imm2(jmpFalseOp), trueV, 4, haltOp, badOp},
+			[]int{imm2(jmpFalseOp), trueV, 4, haltOp, badOp},
 		},
 		{
 			"jump false when false immediate mode",
-			[]int{1100 + jmpFalseOp, falseV, 4, badOp, haltOp},
-			[]int{1100 + jmpFalseOp, falseV, 4, badOp, haltOp},
+			[]int{imm2(jmpFalseOp), falseV, 4, badOp, haltOp},
+			[]int{imm2(jmpFalseOp), falseV, 4, badOp, haltOp},
 		},
 		{
 			"lt when false immediate mode",
-			[]int{1100 + ltOp, 22, 21, 5, haltOp, -1},
-			[]int{1100 + ltOp, 22, 21, 5, haltOp, falseV},
+			[]int{imm2(ltOp), 22, 21, 5, haltOp, -1},
+			[]int{imm2(ltOp), 22, 21, 5, haltOp, falseV},
 		},
 		{
 			"lt when true immediate mode",
-			[]int{1100 + ltOp, 21, 22, 5, haltOp, -1},
-			[]int{1100 + ltOp, 21, 22, 5, haltOp, trueV},
+			[]int{imm2(ltOp), 21, 22, 5, haltOp, -1},
+			[]int{imm2(ltOp), 21, 22, 5, haltOp, trueV},
 		},
 		{
 			"eq when false immediate mode",
-			[]int{1100 + eqOp, 22, 21, 5, haltOp, -1},
-			[]int{1100 + eqOp, 22, 21, 5, haltOp, falseV},
+			[]int{imm2(eqOp), 22, 21, 5, haltOp, -1},
+			[]int{imm2(eqOp), 22, 21, 5, haltOp, falseV},
 		},
 		{
 			"eq when true immediate mode",
-			[]int{1100 + eqOp, 21, 21, 5, haltOp, -1},
-			[]int{1100 + eqOp, 21, 21, 5, haltOp, trueV},
+			[]int{imm2(eqOp), 21, 21, 5, haltOp, -1},
+			[]int{imm2(eqOp), 21, 21, 5, haltOp, trueV},
 		},
 	}
 	for _, tt := range tests {
@@ -85,6 +146,43 @@ func TestMem_RunWithFixedInputs_basicOps(t *testing.T) {
 			code.RunWithFixedInput([]int{})
 			if !reflect.DeepEqual(code.mem, tt.afterMem) {
 				t.Errorf("RunWithFixedInput() = %v, want %v", tt.mem, tt.afterMem)
+			}
+		})
+	}
+}
+
+func TestMem_RunWithFixedInput_resize(t *testing.T) {
+	tests := []struct {
+		name       string
+		mem        []int
+		afterMem   []int
+		inputs     []int
+		wantOutput []int
+	}{
+		{
+			"doesnt resize for reads",
+			[]int{outputOp, 6, haltOp},
+			[]int{outputOp, 6, haltOp},
+			[]int{},
+			[]int{0},
+		},
+		{
+			"resizes for writes",
+			[]int{imm2(addOp), 3, 5, 6, haltOp},
+			[]int{imm2(addOp), 3, 5, 6, haltOp, 0, 8},
+			[]int{},
+			[]int{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code := NewFromOps(tt.mem)
+			outputs := code.RunWithFixedInput(tt.inputs)
+			if !reflect.DeepEqual(code.mem, tt.afterMem) {
+				t.Errorf("RunWithFixedInput() = %v, want %v", code.mem, tt.afterMem)
+			}
+			if !reflect.DeepEqual(outputs, tt.wantOutput) {
+				t.Errorf("outputs = %v, want %v", outputs, tt.wantOutput)
 			}
 		})
 	}
@@ -126,13 +224,20 @@ func TestMem_RunWithFixedInput_inputOutput(t *testing.T) {
 			[]int{0},
 			[]int{667, 668},
 		},
+		{
+			"with relative base and many outputs",
+			[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
+			[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
+			[]int{109},
+			[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			code := NewFromOps(tt.mem)
 			outputs := code.RunWithFixedInput(tt.inputs)
 			if !reflect.DeepEqual(code.mem, tt.afterMem) {
-				t.Errorf("RunWithFixedInput() = %v, want %v", tt.mem, tt.afterMem)
+				t.Errorf("RunWithFixedInput() = %v, want %v", code.mem, tt.afterMem)
 			}
 			if !reflect.DeepEqual(outputs, tt.wantOutput) {
 				t.Errorf("outputs = %v, want %v", outputs, tt.wantOutput)
