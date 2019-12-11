@@ -6,6 +6,13 @@ func MaxInt(a, b int) int {
 	}
 	return b
 }
+func ModWithSameSign(d, m int) int {
+	var res = d % m
+	if (res < 0 && m > 0) || (res > 0 && m < 0) {
+		return res + m
+	}
+	return res
+}
 
 func MinInt(a, b int) int {
 	if a < b {
@@ -33,11 +40,4 @@ func MinUint(a, b uint) uint {
 		return a
 	}
 	return b
-}
-
-func AbsUint(x uint) uint {
-	if x < 0 {
-		x = -x
-	}
-	return x
 }

@@ -10,8 +10,16 @@ type Mem struct {
 	mem           []int
 	ID            string
 	Input, Output chan int
-	Quit          chan bool
+	State         chan State
 }
+
+type State int
+
+const (
+	NeedInput = iota
+	HaveOutput
+	Halted
+)
 
 func NewFromOps(mem []int) *Mem {
 	m := make([]int, len(mem))
@@ -21,7 +29,7 @@ func NewFromOps(mem []int) *Mem {
 		ID:     "Mem",
 		Input:  make(chan int),
 		Output: make(chan int),
-		Quit:   make(chan bool),
+		State:  make(chan State),
 	}
 }
 
@@ -57,18 +65,18 @@ func (ic *Mem) RunWithFixedInput(inputs []int) []int {
 	go ic.Run()
 
 	outputs := make([]int, 0)
-	i := 0
 	for {
-		i++
 		select {
 
 		case v := <-ic.Output:
 			outputs = append(outputs, v)
 
-		case <-ic.Quit:
-			return outputs
+		case s := <-ic.State:
+			if s == Halted {
+				return outputs
+			}
 
-		case <-time.After(1000000 * time.Second):
+		case <-time.After(1 * time.Second):
 			log.Fatalf("%s Timed out running with fixed input", ic.ID)
 		}
 	}
@@ -76,7 +84,7 @@ func (ic *Mem) RunWithFixedInput(inputs []int) []int {
 
 func (ic *Mem) Run() {
 	defer close(ic.Output)
-	defer close(ic.Quit)
+	defer close(ic.State)
 	ip := 0
 	curInputIdx := 0
 	mem := ic.mem
@@ -84,7 +92,7 @@ func (ic *Mem) Run() {
 		op := mem[ip]
 		switch op % 100 {
 		case haltOp:
-			ic.Quit <- true
+			ic.State <- Halted
 			return
 
 		case addOp:
@@ -103,6 +111,7 @@ func (ic *Mem) Run() {
 
 		case inputOp:
 			out := ic.load(ip+1, immediateMode)
+			ic.State <- NeedInput
 			select {
 			case input := <-ic.Input:
 				ic.store(out, input)
@@ -114,6 +123,7 @@ func (ic *Mem) Run() {
 
 		case outputOp:
 			out := ic.load(ip+1, immediateMode)
+			ic.State <- HaveOutput
 			ic.Output <- mem[out]
 			ip += 2
 
