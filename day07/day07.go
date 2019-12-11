@@ -68,6 +68,18 @@ func part2(origCode *intcode.Mem) int {
 		numRemaining := int64(numAmps)
 		isQuit := make([]bool, numAmps)
 
+		for i := 0; isQuit[numAmps - 1]; i = (i+1)%numAmps {
+			amp := amps[i]
+			select {
+			case o := <- amp.Output:
+				j := (i + 1) % len(amps)
+				nextAmp := amps[j]
+				nextAmp.Input<-o
+			case <-amp.Quit:
+				isQuit[i] = true
+			}
+		}
+
 		// Connect amps 1 step at a time
 		step := 0
 		for numRemaining > 0 {
