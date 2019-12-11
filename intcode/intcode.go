@@ -125,10 +125,9 @@ func (ic *Mem) Run() {
 			}
 
 		case outputOp:
-			out := ic.loadWriteAddr(ip+1, mode(op, 0))
+			out := ic.load(ip+1, mode(op, 0))
 			ic.State <- HaveOutput
-			get := ic.get(out)
-			ic.Output <- get
+			ic.Output <- out
 			ip += 2
 
 		case jmpTrueOp:
@@ -173,7 +172,7 @@ func (ic *Mem) Run() {
 
 		case adjRelBaseOp:
 			p1 := ic.load(ip+1, mode(op, 0))
-			ic.relBase = p1
+			ic.relBase += p1
 			ip += 2
 
 		default:
@@ -235,6 +234,10 @@ func (ic *Mem) Clone() *Mem {
 
 func (ic *Mem) maybeGrow(i int) {
 	if i < len(ic.mem) {
+		return
+	}
+	if i < cap(ic.mem) {
+		ic.mem = ic.mem[:i+1]
 		return
 	}
 	m := make([]int, i+1, (i+1)*2)

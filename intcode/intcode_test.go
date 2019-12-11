@@ -15,12 +15,16 @@ const (
 
 func m(op int, modes ...int) int {
 	v := 0
-	for _, m := range modes {
+	for i := len(modes) - 1; i >= 0; i-- {
+		m := modes[i]
 		v *= 10
 		v += m
 	}
 	return (v * 100) + op
 }
+
+func rel1(op int) int { return m(op, relativeMode) }
+func imm1(op int) int { return m(op, immediateMode) }
 func imm2(op int) int { return m(op, immediateMode, immediateMode) }
 
 func Test_mode(t *testing.T) {
@@ -28,10 +32,11 @@ func Test_mode(t *testing.T) {
 		name      string
 		val, want int
 	}{
-		{"rel-imm-add", m(addOp, rel, imm), 2100 + addOp},
-		{"rel-imm-jmp", m(jmpTrueOp, rel, imm), 2100 + jmpTrueOp},
-		{"pos-imm-add", m(addOp, pos, imm), 100 + addOp},
-		{"imm-pos-add", m(addOp, imm, pos), 1000 + addOp},
+		{"rel-imm-add", m(addOp, rel, imm), 12e2 + addOp},
+		{"rel-imm-jmp", m(jmpTrueOp, imm, rel), 21e2 + jmpTrueOp},
+		{"pos-imm-add", m(addOp, pos, imm), 10e2 + addOp},
+		{"imm-pos-add", m(addOp, imm, pos), 1e2 + addOp},
+		{"pos-imm-eq", m(eqOp, pos, imm), 10e2 + eqOp},
 	}
 
 	for _, tt := range tests {
@@ -191,6 +196,39 @@ func TestMem_RunWithFixedInput_resize(t *testing.T) {
 	}
 }
 
+func TestMem_RunWithFixedInput_quine(t *testing.T) {
+	tests := []struct {
+		name       string
+		mem        []int
+		afterMem   []int
+		inputs     []int
+		wantOutput []int
+	}{
+		{
+			"output from quine",
+			[]int{
+				imm1(adjRelBaseOp), 1,
+				rel1(outputOp), -1,
+				m(addOp, pos, imm), 100, 1, 100,
+				m(eqOp, pos, imm), 100, 16, 101,
+				m(jmpFalseOp, pos, imm), 101, 0,
+				haltOp},
+			[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
+			[]int{},
+			[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code := NewFromOps(tt.mem)
+			outputs := code.RunWithFixedInput(tt.inputs)
+			if !reflect.DeepEqual(outputs, tt.wantOutput) {
+				t.Errorf("outputs = %v, want %v", outputs, tt.wantOutput)
+			}
+		})
+	}
+}
+
 func TestMem_RunWithFixedInput_inputOutput(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -234,13 +272,13 @@ func TestMem_RunWithFixedInput_inputOutput(t *testing.T) {
 			[]int{},
 			[]int{109},
 		},
-		// {
-		// 	"output from negative relative base",
-		// 	[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
-		// 	[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
-		// 	[]int{},
-		// 	[]int{0},
-		// },
+		{
+			"output large number",
+			[]int{104, 1125899906842624, 99},
+			[]int{104, 1125899906842624, 99},
+			[]int{},
+			[]int{1125899906842624},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
