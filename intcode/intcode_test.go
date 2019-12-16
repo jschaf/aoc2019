@@ -32,11 +32,11 @@ func Test_mode(t *testing.T) {
 		name      string
 		val, want int
 	}{
-		{"rel-imm-add", m(addOp, rel, imm), 12e2 + addOp},
-		{"rel-imm-jmp", m(jmpTrueOp, imm, rel), 21e2 + jmpTrueOp},
-		{"pos-imm-add", m(addOp, pos, imm), 10e2 + addOp},
-		{"imm-pos-add", m(addOp, imm, pos), 1e2 + addOp},
-		{"pos-imm-eq", m(eqOp, pos, imm), 10e2 + eqOp},
+		{"rel-imm-add", m(AddOp, rel, imm), 12e2 + AddOp},
+		{"rel-imm-jmp", m(JmpTrueOp, imm, rel), 21e2 + JmpTrueOp},
+		{"pos-imm-add", m(AddOp, pos, imm), 10e2 + AddOp},
+		{"imm-pos-add", m(AddOp, imm, pos), 1e2 + AddOp},
+		{"pos-imm-eq", m(EqOp, pos, imm), 10e2 + EqOp},
 	}
 
 	for _, tt := range tests {
@@ -56,13 +56,13 @@ func TestMem_RunWithFixedInputs_relBase(t *testing.T) {
 	}{
 		{
 			"uses relative base",
-			[]int{m(adjRelBaseOp, imm), 2, m(multOp, rel, rel), 5, 6, 9, haltOp, 11, 13, -1},
-			[]int{m(adjRelBaseOp, imm), 2, m(multOp, rel, rel), 5, 6, 9, haltOp, 11, 13, 143},
+			[]int{m(AdjRelBaseOp, imm), 2, m(MultOp, rel, rel), 5, 6, 9, HaltOp, 11, 13, -1},
+			[]int{m(AdjRelBaseOp, imm), 2, m(MultOp, rel, rel), 5, 6, 9, HaltOp, 11, 13, 143},
 		},
 		{
 			"with relative base and many outputs",
-			[]int{109, 1, 204, -1, haltOp},
-			[]int{109, 1, 204, -1, haltOp},
+			[]int{109, 1, 204, -1, HaltOp},
+			[]int{109, 1, 204, -1, HaltOp},
 		},
 	}
 	for _, tt := range tests {
@@ -84,68 +84,68 @@ func TestMem_RunWithFixedInputs_basicOps(t *testing.T) {
 	}{
 		{
 			"add position mode",
-			[]int{addOp, 0, 4, 1, haltOp},
-			[]int{addOp, 100, 4, 1, haltOp},
+			[]int{AddOp, 0, 4, 1, HaltOp},
+			[]int{AddOp, 100, 4, 1, HaltOp},
 		},
 		{
 			"add immediate mode",
-			[]int{imm2(addOp), 3, 5, 1, haltOp},
-			[]int{imm2(addOp), 8, 5, 1, haltOp},
+			[]int{imm2(AddOp), 3, 5, 1, HaltOp},
+			[]int{imm2(AddOp), 8, 5, 1, HaltOp},
 		},
 		{
 			"multiply position mode",
-			[]int{multOp, 0, 4, 1, haltOp},
-			[]int{multOp, 198, 4, 1, haltOp},
+			[]int{MultOp, 0, 4, 1, HaltOp},
+			[]int{MultOp, 198, 4, 1, HaltOp},
 		},
 		{
 			"multiply immediate mode",
-			[]int{imm2(multOp), 3, 5, 1, haltOp},
-			[]int{imm2(multOp), 15, 5, 1, haltOp},
+			[]int{imm2(MultOp), 3, 5, 1, HaltOp},
+			[]int{imm2(MultOp), 15, 5, 1, HaltOp},
 		},
 		{
 			"jump true when true immediate mode",
-			[]int{imm2(jmpTrueOp), trueV, 4, badOp, haltOp},
-			[]int{imm2(jmpTrueOp), trueV, 4, badOp, haltOp},
+			[]int{imm2(JmpTrueOp), TrueV, 4, badOp, HaltOp},
+			[]int{imm2(JmpTrueOp), TrueV, 4, badOp, HaltOp},
 		},
 		{
 			"jump true when true position mode",
-			[]int{jmpTrueOp, 3, 4, trueV, 5, haltOp},
-			[]int{jmpTrueOp, 3, 4, trueV, 5, haltOp},
+			[]int{JmpTrueOp, 3, 4, TrueV, 5, HaltOp},
+			[]int{JmpTrueOp, 3, 4, TrueV, 5, HaltOp},
 		},
 		{
 			"jump true when false immediate mode",
-			[]int{imm2(jmpTrueOp), falseV, 4, haltOp, badOp},
-			[]int{imm2(jmpTrueOp), falseV, 4, haltOp, badOp},
+			[]int{imm2(JmpTrueOp), FalseV, 4, HaltOp, badOp},
+			[]int{imm2(JmpTrueOp), FalseV, 4, HaltOp, badOp},
 		},
 		{
 			"jump false when true immediate mode",
-			[]int{imm2(jmpFalseOp), trueV, 4, haltOp, badOp},
-			[]int{imm2(jmpFalseOp), trueV, 4, haltOp, badOp},
+			[]int{imm2(JmpFalseOp), TrueV, 4, HaltOp, badOp},
+			[]int{imm2(JmpFalseOp), TrueV, 4, HaltOp, badOp},
 		},
 		{
 			"jump false when false immediate mode",
-			[]int{imm2(jmpFalseOp), falseV, 4, badOp, haltOp},
-			[]int{imm2(jmpFalseOp), falseV, 4, badOp, haltOp},
+			[]int{imm2(JmpFalseOp), FalseV, 4, badOp, HaltOp},
+			[]int{imm2(JmpFalseOp), FalseV, 4, badOp, HaltOp},
 		},
 		{
 			"lt when false immediate mode",
-			[]int{imm2(ltOp), 22, 21, 5, haltOp, -1},
-			[]int{imm2(ltOp), 22, 21, 5, haltOp, falseV},
+			[]int{imm2(LtOp), 22, 21, 5, HaltOp, -1},
+			[]int{imm2(LtOp), 22, 21, 5, HaltOp, FalseV},
 		},
 		{
 			"lt when true immediate mode",
-			[]int{imm2(ltOp), 21, 22, 5, haltOp, -1},
-			[]int{imm2(ltOp), 21, 22, 5, haltOp, trueV},
+			[]int{imm2(LtOp), 21, 22, 5, HaltOp, -1},
+			[]int{imm2(LtOp), 21, 22, 5, HaltOp, TrueV},
 		},
 		{
 			"eq when false immediate mode",
-			[]int{imm2(eqOp), 22, 21, 5, haltOp, -1},
-			[]int{imm2(eqOp), 22, 21, 5, haltOp, falseV},
+			[]int{imm2(EqOp), 22, 21, 5, HaltOp, -1},
+			[]int{imm2(EqOp), 22, 21, 5, HaltOp, FalseV},
 		},
 		{
 			"eq when true immediate mode",
-			[]int{imm2(eqOp), 21, 21, 5, haltOp, -1},
-			[]int{imm2(eqOp), 21, 21, 5, haltOp, trueV},
+			[]int{imm2(EqOp), 21, 21, 5, HaltOp, -1},
+			[]int{imm2(EqOp), 21, 21, 5, HaltOp, TrueV},
 		},
 	}
 	for _, tt := range tests {
@@ -169,15 +169,15 @@ func TestMem_RunWithFixedInput_resize(t *testing.T) {
 	}{
 		{
 			"no resize for reads",
-			[]int{outputOp, 6, haltOp},
-			[]int{outputOp, 6, haltOp},
+			[]int{OutputOp, 6, HaltOp},
+			[]int{OutputOp, 6, HaltOp},
 			[]int{},
 			[]int{0},
 		},
 		{
 			"resize for writes",
-			[]int{imm2(addOp), 3, 5, 6, haltOp},
-			[]int{imm2(addOp), 3, 5, 6, haltOp, 0, 8},
+			[]int{imm2(AddOp), 3, 5, 6, HaltOp},
+			[]int{imm2(AddOp), 3, 5, 6, HaltOp, 0, 8},
 			[]int{},
 			[]int{},
 		},
@@ -207,12 +207,12 @@ func TestMem_RunWithFixedInput_quine(t *testing.T) {
 		{
 			"output from quine",
 			[]int{
-				imm1(adjRelBaseOp), 1,
-				rel1(outputOp), -1,
-				m(addOp, pos, imm), 100, 1, 100,
-				m(eqOp, pos, imm), 100, 16, 101,
-				m(jmpFalseOp, pos, imm), 101, 0,
-				haltOp},
+				imm1(AdjRelBaseOp), 1,
+				rel1(OutputOp), -1,
+				m(AddOp, pos, imm), 100, 1, 100,
+				m(EqOp, pos, imm), 100, 16, 101,
+				m(JmpFalseOp, pos, imm), 101, 0,
+				HaltOp},
 			[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
 			[]int{},
 			[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
@@ -239,36 +239,36 @@ func TestMem_RunWithFixedInput_inputOutput(t *testing.T) {
 	}{
 		{
 			"input",
-			[]int{inputOp, 1, haltOp},
-			[]int{inputOp, 88, haltOp},
+			[]int{InputOp, 1, HaltOp},
+			[]int{InputOp, 88, HaltOp},
 			[]int{88},
 			[]int{},
 		},
 		{
 			"multiple inputs",
-			[]int{inputOp, 1, inputOp, 3, haltOp},
-			[]int{inputOp, 88, inputOp, 99, haltOp},
+			[]int{InputOp, 1, InputOp, 3, HaltOp},
+			[]int{InputOp, 88, InputOp, 99, HaltOp},
 			[]int{88, 99},
 			[]int{},
 		},
 		{
 			"output",
-			[]int{outputOp, 3, haltOp, 667},
-			[]int{outputOp, 3, haltOp, 667},
+			[]int{OutputOp, 3, HaltOp, 667},
+			[]int{OutputOp, 3, HaltOp, 667},
 			[]int{},
 			[]int{667},
 		},
 		{
 			"multiple outputs",
-			[]int{outputOp, 5, outputOp, 6, haltOp, 667, 668},
-			[]int{outputOp, 5, outputOp, 6, haltOp, 667, 668},
+			[]int{OutputOp, 5, OutputOp, 6, HaltOp, 667, 668},
+			[]int{OutputOp, 5, OutputOp, 6, HaltOp, 667, 668},
 			[]int{},
 			[]int{667, 668},
 		},
 		{
 			"output from negative relative base",
-			[]int{109, 1, 204, -1, haltOp},
-			[]int{109, 1, 204, -1, haltOp},
+			[]int{109, 1, 204, -1, HaltOp},
+			[]int{109, 1, 204, -1, HaltOp},
 			[]int{},
 			[]int{109},
 		},

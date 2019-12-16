@@ -41,21 +41,21 @@ func ParseLine(line string) *Mem {
 }
 
 const (
-	addOp        = 1
-	multOp       = 2
-	inputOp      = 3
-	outputOp     = 4
-	jmpTrueOp    = 5
-	jmpFalseOp   = 6
-	ltOp         = 7
-	eqOp         = 8
-	adjRelBaseOp = 9
-	haltOp       = 99
+	AddOp        = 1
+	MultOp       = 2
+	InputOp      = 3
+	OutputOp     = 4
+	JmpTrueOp    = 5
+	JmpFalseOp   = 6
+	LtOp         = 7
+	EqOp         = 8
+	AdjRelBaseOp = 9
+	HaltOp       = 99
 )
 
 const (
-	falseV = 0
-	trueV  = 1
+	FalseV = 0
+	TrueV  = 1
 )
 
 const (
@@ -99,25 +99,25 @@ func (ic *Mem) Run() {
 	for {
 		op := ic.mem[ip]
 		switch op % 100 {
-		case haltOp:
+		case HaltOp:
 			ic.State <- Halted
 			return
 
-		case addOp:
+		case AddOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
 			out := ic.loadWriteAddr(ip+3, mode(op, 2))
 			ic.store(out, p1+p2)
 			ip += 4
 
-		case multOp:
+		case MultOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
 			out := ic.loadWriteAddr(ip+3, mode(op, 2))
 			ic.store(out, p1*p2)
 			ip += 4
 
-		case inputOp:
+		case InputOp:
 			out := ic.loadWriteAddr(ip+1, mode(op, 0))
 			ic.State <- NeedInput
 			select {
@@ -129,13 +129,13 @@ func (ic *Mem) Run() {
 				log.Fatalf("%s failed to get input in 1 second", ic.ID)
 			}
 
-		case outputOp:
+		case OutputOp:
 			out := ic.load(ip+1, mode(op, 0))
 			ic.State <- HaveOutput
 			ic.Output <- out
 			ip += 2
 
-		case jmpTrueOp:
+		case JmpTrueOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
 			if p1 > 0 {
@@ -144,7 +144,7 @@ func (ic *Mem) Run() {
 				ip += 3
 			}
 
-		case jmpFalseOp:
+		case JmpFalseOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
 			if p1 == 0 {
@@ -153,29 +153,29 @@ func (ic *Mem) Run() {
 				ip += 3
 			}
 
-		case ltOp:
+		case LtOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
 			out := ic.loadWriteAddr(ip+3, mode(op, 2))
 			if p1 < p2 {
-				ic.store(out, trueV)
+				ic.store(out, TrueV)
 			} else {
-				ic.store(out, falseV)
+				ic.store(out, FalseV)
 			}
 			ip += 4
 
-		case eqOp:
+		case EqOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			p2 := ic.load(ip+2, mode(op, 1))
 			out := ic.loadWriteAddr(ip+3, mode(op, 2))
 			if p1 == p2 {
-				ic.store(out, trueV)
+				ic.store(out, TrueV)
 			} else {
-				ic.store(out, falseV)
+				ic.store(out, FalseV)
 			}
 			ip += 4
 
-		case adjRelBaseOp:
+		case AdjRelBaseOp:
 			p1 := ic.load(ip+1, mode(op, 0))
 			ic.relBase += p1
 			ip += 2
