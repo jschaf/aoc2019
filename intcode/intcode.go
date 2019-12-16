@@ -59,9 +59,9 @@ const (
 )
 
 const (
-	positionMode  = 0
-	immediateMode = 1
-	relativeMode  = 2
+	PositionMode  = 0
+	ImmediateMode = 1
+	RelativeMode  = 2
 )
 
 func (ic *Mem) RunWithFixedInput(inputs []int) []int {
@@ -196,11 +196,11 @@ func mode(op, pos int) int {
 
 func (ic *Mem) load(pos int, mode int) int {
 	switch mode {
-	case positionMode:
+	case PositionMode:
 		return ic.get(ic.get(pos))
-	case immediateMode:
+	case ImmediateMode:
 		return ic.get(pos)
-	case relativeMode:
+	case RelativeMode:
 		return ic.get(ic.relBase + ic.get(pos))
 	default:
 		panic(fmt.Sprintf("unknown mode %d", mode))
@@ -208,11 +208,11 @@ func (ic *Mem) load(pos int, mode int) int {
 }
 func (ic *Mem) loadWriteAddr(pos int, mode int) int {
 	switch mode {
-	case positionMode:
+	case PositionMode:
 		return ic.get(pos)
-	case immediateMode:
+	case ImmediateMode:
 		panic("write addr should not be immediate")
-	case relativeMode:
+	case RelativeMode:
 		return ic.relBase + ic.get(pos)
 	default:
 		panic(fmt.Sprintf("unknown mode %d", mode))
@@ -248,4 +248,14 @@ func (ic *Mem) maybeGrow(i int) {
 	m := make([]int, i+1, (i+1)*2)
 	copy(m, ic.mem)
 	ic.mem = m
+}
+
+func Mode(op int, modes ...int) int {
+	v := 0
+	for i := len(modes) - 1; i >= 0; i-- {
+		m := modes[i]
+		v *= 10
+		v += m
+	}
+	return (v * 100) + op
 }

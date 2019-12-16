@@ -8,35 +8,25 @@ import (
 const badOp = 77777
 
 const (
-	pos = positionMode
-	imm = immediateMode
-	rel = relativeMode
+	pos = PositionMode
+	imm = ImmediateMode
+	rel = RelativeMode
 )
 
-func m(op int, modes ...int) int {
-	v := 0
-	for i := len(modes) - 1; i >= 0; i-- {
-		m := modes[i]
-		v *= 10
-		v += m
-	}
-	return (v * 100) + op
-}
-
-func rel1(op int) int { return m(op, relativeMode) }
-func imm1(op int) int { return m(op, immediateMode) }
-func imm2(op int) int { return m(op, immediateMode, immediateMode) }
+func rel1(op int) int { return Mode(op, RelativeMode) }
+func imm1(op int) int { return Mode(op, ImmediateMode) }
+func imm2(op int) int { return Mode(op, ImmediateMode, ImmediateMode) }
 
 func Test_mode(t *testing.T) {
 	tests := []struct {
 		name      string
 		val, want int
 	}{
-		{"rel-imm-add", m(AddOp, rel, imm), 12e2 + AddOp},
-		{"rel-imm-jmp", m(JmpTrueOp, imm, rel), 21e2 + JmpTrueOp},
-		{"pos-imm-add", m(AddOp, pos, imm), 10e2 + AddOp},
-		{"imm-pos-add", m(AddOp, imm, pos), 1e2 + AddOp},
-		{"pos-imm-eq", m(EqOp, pos, imm), 10e2 + EqOp},
+		{"rel-imm-add", Mode(AddOp, rel, imm), 12e2 + AddOp},
+		{"rel-imm-jmp", Mode(JmpTrueOp, imm, rel), 21e2 + JmpTrueOp},
+		{"pos-imm-add", Mode(AddOp, pos, imm), 10e2 + AddOp},
+		{"imm-pos-add", Mode(AddOp, imm, pos), 1e2 + AddOp},
+		{"pos-imm-eq", Mode(EqOp, pos, imm), 10e2 + EqOp},
 	}
 
 	for _, tt := range tests {
@@ -56,8 +46,8 @@ func TestMem_RunWithFixedInputs_relBase(t *testing.T) {
 	}{
 		{
 			"uses relative base",
-			[]int{m(AdjRelBaseOp, imm), 2, m(MultOp, rel, rel), 5, 6, 9, HaltOp, 11, 13, -1},
-			[]int{m(AdjRelBaseOp, imm), 2, m(MultOp, rel, rel), 5, 6, 9, HaltOp, 11, 13, 143},
+			[]int{Mode(AdjRelBaseOp, imm), 2, Mode(MultOp, rel, rel), 5, 6, 9, HaltOp, 11, 13, -1},
+			[]int{Mode(AdjRelBaseOp, imm), 2, Mode(MultOp, rel, rel), 5, 6, 9, HaltOp, 11, 13, 143},
 		},
 		{
 			"with relative base and many outputs",
@@ -209,9 +199,9 @@ func TestMem_RunWithFixedInput_quine(t *testing.T) {
 			[]int{
 				imm1(AdjRelBaseOp), 1,
 				rel1(OutputOp), -1,
-				m(AddOp, pos, imm), 100, 1, 100,
-				m(EqOp, pos, imm), 100, 16, 101,
-				m(JmpFalseOp, pos, imm), 101, 0,
+				Mode(AddOp, pos, imm), 100, 1, 100,
+				Mode(EqOp, pos, imm), 100, 16, 101,
+				Mode(JmpFalseOp, pos, imm), 101, 0,
 				HaltOp},
 			[]int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99},
 			[]int{},
