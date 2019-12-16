@@ -3,6 +3,7 @@ package main
 import (
 	"aoc2019/files"
 	"aoc2019/intcode"
+	"aoc2019/maths"
 	"fmt"
 	"log"
 )
@@ -10,8 +11,14 @@ import (
 func main() {
 	line := files.ReadFirstLine("day11/input.txt")
 	code := intcode.ParseLine(line)
-	numTiles := part1(code)
+	numTiles := len(runPaintRobot(code, black).colors)
 	fmt.Printf("Part1: %d tiles painted\n", numTiles)
+
+	hull := part2(code)
+	fmt.Println("Part2 hull:")
+	for _, runes := range hull {
+		fmt.Println(string(runes))
+	}
 }
 
 type point struct{ x, y int }
@@ -26,6 +33,7 @@ const (
 )
 
 const (
+	black = 0
 	white = 1
 )
 
@@ -54,6 +62,8 @@ func (ps *paintState) turnLeft() {
 		ps.dir = right
 	case right:
 		ps.dir = up
+	default:
+		panic("unexpected direction")
 	}
 }
 
@@ -67,17 +77,19 @@ func (ps *paintState) turnRight() {
 		ps.dir = left
 	case right:
 		ps.dir = down
+	default:
+		panic("unexpected direction")
 	}
 }
 
 func (ps *paintState) advance() {
 	switch ps.dir {
 	case up:
-		ps.pos = point{ps.pos.x, ps.pos.y + 1}
+		ps.pos = point{ps.pos.x, ps.pos.y - 1}
 	case left:
 		ps.pos = point{ps.pos.x - 1, ps.pos.y}
 	case down:
-		ps.pos = point{ps.pos.x, ps.pos.y - 1}
+		ps.pos = point{ps.pos.x, ps.pos.y + 1}
 	case right:
 		ps.pos = point{ps.pos.x + 1, ps.pos.y}
 	default:
@@ -89,7 +101,9 @@ func (ps *paintState) paint(c hullColor) {
 	ps.colors[ps.pos] = c
 }
 
-func part1(code *intcode.Mem) int {
+func runPaintRobot(mem *intcode.Mem, startColor int) paintState {
+	code := mem.Clone()
+	code.SeedInput([]int{startColor})
 	go code.Run()
 
 	state := paintState{
@@ -102,7 +116,7 @@ func part1(code *intcode.Mem) int {
 		case s := <-code.State:
 			switch s {
 			case intcode.Halted:
-				return len(state.colors)
+				return state
 
 			case intcode.NeedInput:
 				code.Input <- int(state.colors[state.pos])
@@ -127,4 +141,40 @@ func part1(code *intcode.Mem) int {
 			}
 		}
 	}
+}
+
+func part2(mem *intcode.Mem) [][]rune {
+	state := runPaintRobot(mem, white)
+	xLo, xHi, yLo, yHi := 0, 0, 0, 0
+	for pt := range state.colors {
+		xLo = maths.MinInt(xLo, pt.x)
+		xHi = maths.MaxInt(xHi, pt.x)
+		yLo = maths.MinInt(yLo, pt.y)
+		yHi = maths.MaxInt(yHi, pt.y)
+	}
+	xOffset := maths.MaxInt(0, xLo*-1)
+	yOffset := maths.MaxInt(0, yLo*-1)
+
+	hull := make([][]rune, yHi+yOffset+1)
+	for i := range hull {
+		hull[i] = make([]rune, xHi+xOffset+1)
+		for j := range hull[i] {
+			hull[i][j] = '.'
+		}
+	}
+
+	for pt, color := range state.colors {
+		x := pt.x + xOffset
+		y := pt.y + yOffset
+		switch color {
+		case black:
+			hull[y][x] = ' '
+		case white:
+			hull[y][x] = '#'
+		default:
+			panic("unexpected color")
+		}
+	}
+
+	return hull
 }

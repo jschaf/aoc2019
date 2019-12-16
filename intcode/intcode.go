@@ -13,6 +13,9 @@ type Mem struct {
 	ID            string
 	Input, Output chan int
 	State         chan State
+	state         State
+	seed          []int
+	seedIdx       int
 }
 
 type State int
@@ -21,6 +24,12 @@ const (
 	NeedInput = iota
 	HaveOutput
 	Halted
+)
+
+const (
+	isUnstarted = iota
+	isStarted
+	isHalted
 )
 
 func NewFromOps(mem []int) *Mem {
@@ -65,12 +74,7 @@ const (
 )
 
 func (ic *Mem) RunWithFixedInput(inputs []int) []int {
-	go func() {
-		for _, x := range inputs {
-			ic.Input <- x
-		}
-	}()
-
+	ic.SeedInput(inputs)
 	go ic.Run()
 
 	outputs := make([]int, 0)
@@ -85,21 +89,30 @@ func (ic *Mem) RunWithFixedInput(inputs []int) []int {
 				return outputs
 			}
 
-		case <-time.After(10000 * time.Second):
+		case <-time.After(1 * time.Second):
 			log.Fatalf("%s Timed out running with fixed input", ic.ID)
 		}
 	}
 }
 
+func (ic *Mem) SeedInput(seed []int) {
+	if ic.state != isUnstarted {
+		panic("intcode is already started or already halted")
+	}
+	ic.seed = seed
+	ic.seedIdx = 0
+}
+
 func (ic *Mem) Run() {
+	ic.state = isStarted
 	defer close(ic.Output)
 	defer close(ic.State)
 	ip := 0
-	curInputIdx := 0
 	for {
 		op := ic.mem[ip]
 		switch op % 100 {
 		case HaltOp:
+			ic.state = isHalted
 			ic.State <- Halted
 			return
 
@@ -119,15 +132,19 @@ func (ic *Mem) Run() {
 
 		case InputOp:
 			out := ic.loadWriteAddr(ip+1, mode(op, 0))
-			ic.State <- NeedInput
-			select {
-			case input := <-ic.Input:
-				ic.store(out, input)
-				curInputIdx += 1
-				ip += 2
-			case <-time.After(10000 * time.Second):
-				log.Fatalf("%s failed to get input in 1 second", ic.ID)
+			if ic.seedIdx < len(ic.seed) {
+				ic.store(out, ic.seed[ic.seedIdx])
+				ic.seedIdx++
+			} else {
+				ic.State <- NeedInput
+				select {
+				case input := <-ic.Input:
+					ic.store(out, input)
+				case <-time.After(1 * time.Second):
+					log.Fatalf("%s failed to get input in 1 second", ic.ID)
+				}
 			}
+			ip += 2
 
 		case OutputOp:
 			out := ic.load(ip+1, mode(op, 0))
