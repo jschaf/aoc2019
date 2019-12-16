@@ -103,6 +103,13 @@ func (ic *Mem) SeedInput(seed []int) {
 	ic.seedIdx = 0
 }
 
+func (ic *Mem) Set(addr, val int) {
+	if ic.state != isUnstarted {
+		panic("intcode is already started or already halted")
+	}
+	ic.mem[addr] = val
+}
+
 func (ic *Mem) Run() {
 	ic.state = isStarted
 	defer close(ic.Output)
